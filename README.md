@@ -1,51 +1,79 @@
-# 🐳 Jenkins Docker-in-Docker CI/CD Pipeline
+# 🛒 Ekart - CI/CD Pipeline Project
 
-This project demonstrates a fully automated **CI/CD pipeline using Jenkins inside Docker**, designed to pull code from GitHub, build a Docker image, run containerized Spring Boot apps, and perform security and code quality analysis with **SonarQube** and **Trivy** — all within Docker!
+A production-ready Java-based ecommerce backend application, integrated with a complete CI/CD pipeline using Jenkins, SonarQube, Trivy, Docker, and Email Notifications.
 
----
+## 📦 Tech Stack
 
-## 🚀 What’s Inside
+- Java 17
+- Maven
+- Spring Boot
+- Docker
+- Jenkins (Pipeline as Code)
+- SonarQube (Code Quality)
+- Trivy (Security Scanning)
+- HTML Email Notification (Post-build report)
 
-- 🔁 **Jenkins in Docker**: CI/CD orchestrated inside a Jenkins container  
-- 🧪 **SonarQube Integration**: Static code analysis for code quality and bugs  
-- 🛡️ **Trivy Scanner**: Container image vulnerability scanning  
-- 🐳 **Docker-in-Docker (DinD)**: Jenkins builds and runs containers within its own container  
-- 🔧 **Maven Build**: Compiles and packages a Spring Boot project  
-- 🔁 **Automated Docker Image Build & Run**  
-- 📦 **Docker Hub or Local Registry Push Support**
+## 🚀 Pipeline Overview
 
----
+This Jenkinsfile automates the complete DevOps lifecycle:
 
-## 🔧 Requirements
+| Stage                | Description                                                    |
+|---------------------|----------------------------------------------------------------|
+| Git Checkout        | Clones the Ekart GitHub repo                                   |
+| Compile             | Compiles the source code using Maven                           |
+| SonarQube Analysis  | Performs static code analysis with SonarQube                   |
+| Test                | Runs unit tests (optional: currently skipped)                  |
+| File System Scan    | Security scan on source code using Trivy                       |
+| Build               | Builds the JAR using Maven                                     |
+| Docker Build        | Builds Docker image using `docker/Dockerfile`                 |
+| Image Scan          | Trivy image scan for vulnerabilities                           |
+| Docker Run          | Deploys Docker container on port `8070`                        |
+| Email Notification  | Sends styled HTML email with pipeline summary + Trivy report  |
 
-Make sure the following are installed and running before setting up:
+## ✅ Prerequisites
 
-### 🖥️ Local Machine
+Ensure these tools are installed and configured:
 
-- ✅ [Docker](https://docs.docker.com/get-docker/) (v20+ recommended)
-- ✅ [Docker Compose](https://docs.docker.com/compose/)
-- ✅ [Git](https://git-scm.com/)
-- ✅ Internet connection to pull dependencies
+- Docker
+- Java 17
+- Maven 3.x
+- Jenkins with:
+  - `jdk17`, `maven3`, `sonar-scanner` configured via global tools
+  - SonarQube plugin + credentials configured (`sonar`)
+  - Email Notification (SMTP setup)
+  - Trivy installed on Jenkins machine
 
-### 🧪 Tools (via Docker or local installation)
+## 🔧 Setup Commands
 
-- ✅ **Jenkins** (can run inside Docker)
-- ✅ **SonarQube** (e.g., `http://localhost:9000`)
-- ✅ **Trivy** (install locally or run via Docker)
-- ✅ Java 17+ and Maven (for Spring Boot builds)
-
-> 📝 All tools can be run using Docker containers for quick local setup.
-
----
-
-## 📁 Folder Structure
+Use the following shell commands to run/debug manually:
 
 ```bash
-.
-├── Jenkinsfile               # Jenkins pipeline script
-├── Dockerfile                # App Dockerfile (for Spring Boot app)
-├── scripts/
-│   └── docker-entrypoint.sh  # Optional custom script
-├── src/                      # Spring Boot source code
-├── pom.xml                   # Maven config
-└── README.md                 # This file
+# Clone repo
+git clone https://github.com/jaiswaladi246/Ekart.git
+cd Ekart
+
+# Compile code
+mvn clean compile
+
+# SonarQube scan
+sonar-scanner -Dsonar.projectKey=Ekart \
+              -Dsonar.projectName=Ekart \
+              -Dsonar.java.binaries=. \
+              -Dsonar.host.url=http://<sonar-host>:9000 \
+              -Dsonar.login=<your_token>
+
+# Trivy scan (File System)
+trivy fs --format table -o trivy-fs-report.html .
+
+# Build project
+mvn clean install -DskipTests
+
+# Build Docker image
+docker build -f docker/Dockerfile -t ekart-app:latest .
+
+# Trivy scan (Docker image)
+trivy image --format table -o trivy-image-report.html ekart-app:latest
+
+# Run container
+docker rm -f ekart || true
+docker run -d --name ekart -p 8070:8070 ekart-app:latest
